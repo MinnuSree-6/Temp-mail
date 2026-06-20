@@ -11,7 +11,7 @@ body{font-family:Arial,sans-serif;background:#f0f8ff;color:#333;min-height:100vh
 h1{color:#1a73e8;font-size:2em;margin:20px 0;font-weight:bold}
 .email-box{background:#ffffff;padding:25px;border-radius:15px;margin:20px 0;box-shadow:0 4px 15px rgba(26,115,232,0.2);border:2px solid #e3f2fd}
 p{color:#555;margin-bottom:10px}
-.email-address{font-size:1.3em;color:#fff;background:linear-gradient(135deg,#1a73e8,#42a5f5);padding:12px;border-radius:8px;margin:10px 0;font-weight:bold}
+.email-address{font-size:1.3em;color:#fff;background:linear-gradient(135deg,#1a73e8,#42a5f5);padding:12px;border-radius:8px;margin:10px 0;font-weight:bold;cursor:pointer}
 .timer{font-size:2.5em;color:#1a73e8;margin:10px 0;font-weight:bold}
 .btn{background:linear-gradient(135deg,#1a73e8,#42a5f5);color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-size:1em;transition:all 0.3s;box-shadow:0 2px 8px rgba(26,115,232,0.3)}
 .btn:hover{background:linear-gradient(135deg,#1557b0,#1a73e8);transform:scale(1.05)}
@@ -20,14 +20,13 @@ p{color:#555;margin-bottom:10px}
 .welcome-msg{background:#e8f5e9;border-left:4px solid #4caf50;padding:15px;border-radius:8px;margin:10px 0}
 .welcome-msg h3{color:#4caf50;margin-bottom:8px}
 .welcome-msg p{color:#555;font-size:0.9em;margin:3px 0}
-.welcome-msg .from{color:#888;font-size:0.8em}
-.welcome-msg .time{color:#888;font-size:0.8em;margin-top:5px}
+.from{color:#888;font-size:0.8em}
+.time{color:#888;font-size:0.8em;margin-top:5px}
 .email-item{background:#e3f2fd;padding:12px;border-radius:8px;margin:10px 0;cursor:pointer;border-left:4px solid #1a73e8}
 .email-item.otp{background:#fff3e0;border-left:4px solid #ff9800}
 .email-item h3{color:#1a73e8;font-size:0.95em;margin-bottom:5px}
-.email-item .from{color:#555;font-size:0.85em}
-.email-item .time{color:#90caf9;font-size:0.8em;margin-top:5px}
 .email-body{background:#f8f9fa;padding:15px;border-radius:8px;margin-top:10px;display:none;font-size:0.9em;color:#333}
+.copied{background:#4caf50!important}
 </style>
 </head>
 <body>
@@ -35,11 +34,11 @@ p{color:#555;margin-bottom:10px}
 <h1>⏱️ 15 Minute Temp Mail</h1>
 <div class="email-box">
 <p>Your temporary email address:</p>
-<div class="email-address" id="emailAddr">Loading...</div>
+<div class="email-address" id="emailAddr" onclick="copyEmail()">Loading...</div>
 <div class="timer" id="timer">15:00</div>
 <button class="btn" onclick="copyEmail()">📋 Copy Email</button>
 <button class="btn" onclick="newEmail()">🔄 New Email</button>
-<button class="btn" onclick="refreshInbox()">📥 Refresh Inbox</button>
+<button class="btn" onclick="checkInbox()">📥 Refresh Inbox</button>
 </div>
 <div class="inbox">
 <h2>📬 Inbox</h2>
@@ -59,58 +58,80 @@ p{color:#555;margin-bottom:10px}
 let timeLeft=900;
 let timerInterval;
 let currentEmail='';
-let emailToken='';
 let startTime=Date.now();
+let emailList=[];
 
-function timeAgo(){
-const seconds=Math.floor((Date.now()-startTime)/1000);
+const domains=['guerrillamailblock.com','sharklasers.com','guerrillamail.info','grr.la','guerrillamail.biz','guerrillamail.de','guerrillamail.net','guerrillamail.org','spam4.me'];
+
+function randomName(){
+const chars='abcdefghijklmnopqrstuvwxyz0123456789';
+let result='';
+for(let i=0;i<10;i++) result+=chars.charAt(Math.floor(Math.random()*chars.length));
+return result;
+}
+
+function timeAgo(date){
+const seconds=Math.floor((Date.now()-date)/1000);
 if(seconds<60) return seconds+' seconds ago';
 if(seconds<3600) return Math.floor(seconds/60)+' minutes ago';
 return Math.floor(seconds/3600)+' hours ago';
 }
 
-async function getNewEmail(){
-try{
-const r=await fetch('https://api.guerrillamail.com/ajax.php?f=get_email_address',{credentials:'include'});
-const d=await r.json();
-emailToken=d.sid_token;
-currentEmail=d.email_addr;
+function generateEmail(){
+const name=randomName();
+const domain=domains[Math.floor(Math.random()*domains.length)];
+currentEmail=name+'@'+domain;
 document.getElementById('emailAddr').textContent=currentEmail;
 startTime=Date.now();
 startTimer();
-}catch(e){
-document.getElementById('emailAddr').textContent='Loading failed. Refresh page!';
-}
+showWelcome();
 }
 
-async function refreshInbox(){
-try{
-const r=await fetch(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid_token=${emailToken}`,{credentials:'include'});
-const d=await r.json();
-let html=`<div class="welcome-msg">
+function showWelcome(){
+document.getElementById('inboxContent').innerHTML=`
+<div class="welcome-msg">
 <h3>👋 Hi! Welcome to 15minutemail.com</h3>
 <p class="from">From: no-reply@15minutemail.com</p>
-<p class="time">${timeAgo()}</p>
+<p class="time">just now</p>
 <p>Your temporary email is ready.</p>
 <p>Use it for OTP verification.</p>
 <p>Email expires in 15 minutes!</p>
 </div>`;
-if(d.list && d.list.length>0){
-d.list.forEach(email=>{
+}
+
+async function checkInbox(){
+try{
+const name=currentEmail.split('@')[0];
+const domain=currentEmail.split('@')[1];
+const r=await fetch(`https://api.guerrillamail.com/ajax.php?f=get_email_address&email_user=${name}&domain=${domain}`,{credentials:'include'});
+const d=await r.json();
+const r2=await fetch(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid_token=${d.sid_token}`,{credentials:'include'});
+const d2=await r2.json();
+let html=`<div class="welcome-msg">
+<h3>👋 Hi! Welcome to 15minutemail.com</h3>
+<p class="from">From: no-reply@15minutemail.com</p>
+<p class="time">${timeAgo(startTime)}</p>
+<p>Your temporary email is ready.</p>
+<p>Use it for OTP verification.</p>
+<p>Email expires in 15 minutes!</p>
+</div>`;
+if(d2.list && d2.list.length>0){
+d2.list.forEach(email=>{
 const isOTP=email.mail_subject.toLowerCase().includes('otp')||
-email.mail_subject.toLowerCase().includes('verify')||
-email.mail_subject.toLowerCase().includes('code');
+email.mail_subject.toLowerCase().includes('verif')||
+email.mail_subject.toLowerCase().includes('code')||
+email.mail_subject.toLowerCase().includes('confirm');
 html+=`<div class="email-item ${isOTP?'otp':''}" onclick="toggleBody(this)">
 <h3>${isOTP?'🔐 ':'📧 '}${email.mail_subject}</h3>
 <p class="from">From: ${email.mail_from}</p>
-<p class="time">${timeAgo()}</p>
+<p class="time">${timeAgo(startTime)}</p>
 <div class="email-body">${email.mail_excerpt}</div>
 </div>`;
 });
 }
 document.getElementById('inboxContent').innerHTML=html;
 }catch(e){
-console.log('error');
+console.log('inbox error');
 }
 }
 
@@ -132,25 +153,21 @@ if(timeLeft<=0){clearInterval(timerInterval);newEmail();}
 }
 
 function copyEmail(){
-navigator.clipboard.writeText(currentEmail);
-alert('Email copied!');
+navigator.clipboard.writeText(currentEmail).then(()=>{
+const btn=document.getElementById('emailAddr');
+const origText=btn.textContent;
+btn.style.background='#4caf50';
+setTimeout(()=>{btn.style.background='';},1000);
+alert('Email copied: '+currentEmail);
+});
 }
 
 function newEmail(){
-startTime=Date.now();
-getNewEmail();
-document.getElementById('inboxContent').innerHTML=`<div class="welcome-msg">
-<h3>👋 Hi! Welcome to 15minutemail.com</h3>
-<p class="from">From: no-reply@15minutemail.com</p>
-<p class="time">just now</p>
-<p>Your temporary email is ready.</p>
-<p>Use it for OTP verification.</p>
-<p>Email expires in 15 minutes!</p>
-</div>`;
+generateEmail();
 }
 
-getNewEmail();
-setInterval(refreshInbox,15000);
+generateEmail();
+setInterval(checkInbox,20000);
 </script>
 </body>
 </html>
