@@ -5,17 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>15 Minute Temp Mail</title>
 <style>
-body{font-family:Arial,sans-serif;background:#1a1a2e;color:#fff;margin:0;padding:20px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f0f8ff;color:#333;min-height:100vh;padding:20px}
 .container{max-width:800px;margin:0 auto;text-align:center}
-h1{color:#e94560;font-size:2em}
-.email-box{background:#16213e;padding:20px;border-radius:10px;margin:20px 0}
-.email-address{font-size:1.5em;color:#0f3460;background:#e94560;padding:10px;border-radius:5px;margin:10px 0}
-.timer{font-size:2em;color:#e94560;margin:10px 0}
-.btn{background:#e94560;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;margin:5px;font-size:1em}
-.btn:hover{background:#c73652}
-.inbox{background:#16213e;padding:20px;border-radius:10px;margin:20px 0;text-align:left}
-.email-item{background:#0f3460;padding:10px;border-radius:5px;margin:10px 0;cursor:pointer}
-.no-email{color:#888;text-align:center}
+h1{color:#1a73e8;font-size:2em;margin:20px 0;font-weight:bold}
+.email-box{background:#ffffff;padding:25px;border-radius:15px;margin:20px 0;box-shadow:0 4px 15px rgba(26,115,232,0.2);border:2px solid #e3f2fd}
+p{color:#555;margin-bottom:10px}
+.email-address{font-size:1.3em;color:#fff;background:linear-gradient(135deg,#1a73e8,#42a5f5);padding:12px;border-radius:8px;margin:10px 0;font-weight:bold}
+.timer{font-size:2.5em;color:#1a73e8;margin:10px 0;font-weight:bold}
+.btn{background:linear-gradient(135deg,#1a73e8,#42a5f5);color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-size:1em;transition:all 0.3s;box-shadow:0 2px 8px rgba(26,115,232,0.3)}
+.btn:hover{background:linear-gradient(135deg,#1557b0,#1a73e8);transform:scale(1.05)}
+.inbox{background:#ffffff;padding:25px;border-radius:15px;margin:20px 0;text-align:left;box-shadow:0 4px 15px rgba(26,115,232,0.2);border:2px solid #e3f2fd}
+.inbox h2{color:#1a73e8;margin-bottom:15px}
+.email-item{background:#e3f2fd;padding:12px;border-radius:8px;margin:10px 0;cursor:pointer;border-left:4px solid #1a73e8}
+.no-email{color:#90caf9;text-align:center;padding:20px}
 </style>
 </head>
 <body>
@@ -38,14 +41,12 @@ h1{color:#e94560;font-size:2em}
 let timeLeft=900;
 let timerInterval;
 let currentEmail='';
-
 function generateEmail(){
 const chars='abcdefghijklmnopqrstuvwxyz0123456789';
 let result='';
 for(let i=0;i<10;i++) result+=chars.charAt(Math.floor(Math.random()*chars.length));
 return result+'@tempmail.com';
 }
-
 function startTimer(){
 clearInterval(timerInterval);
 timeLeft=900;
@@ -57,23 +58,19 @@ document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s;
 if(timeLeft<=0){clearInterval(timerInterval);newEmail();}
 },1000);
 }
-
 function copyEmail(){
 navigator.clipboard.writeText(currentEmail);
 alert('Email copied!');
 }
-
 function newEmail(){
 currentEmail=generateEmail();
 document.getElementById('emailAddr').textContent=currentEmail;
 document.getElementById('inboxContent').innerHTML='<p class="no-email">No emails yet. Waiting...</p>';
 startTimer();
 }
-
 function refreshInbox(){
 alert('Refreshing inbox...');
 }
-
 newEmail();
 </script>
 </body>
