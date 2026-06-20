@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15 Minute Temp Mail</title>
+<style>
+body{font-family:Arial,sans-serif;background:#1a1a2e;color:#fff;margin:0;padding:20px}
+.container{max-width:800px;margin:0 auto;text-align:center}
+h1{color:#e94560;font-size:2em}
+.email-box{background:#16213e;padding:20px;border-radius:10px;margin:20px 0}
+.email-address{font-size:1.5em;color:#0f3460;background:#e94560;padding:10px;border-radius:5px;margin:10px 0}
+.timer{font-size:2em;color:#e94560;margin:10px 0}
+.btn{background:#e94560;color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;margin:5px;font-size:1em}
+.btn:hover{background:#c73652}
+.inbox{background:#16213e;padding:20px;border-radius:10px;margin:20px 0;text-align:left}
+.email-item{background:#0f3460;padding:10px;border-radius:5px;margin:10px 0;cursor:pointer}
+.no-email{color:#888;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>⏱️ 15 Minute Temp Mail</h1>
+<div class="email-box">
+<p>Your temporary email address:</p>
+<div class="email-address" id="emailAddr">Loading...</div>
+<div class="timer" id="timer">15:00</div>
+<button class="btn" onclick="copyEmail()">📋 Copy Email</button>
+<button class="btn" onclick="newEmail()">🔄 New Email</button>
+<button class="btn" onclick="refreshInbox()">📥 Refresh Inbox</button>
+</div>
+<div class="inbox">
+<h2>📬 Inbox</h2>
+<div id="inboxContent"><p class="no-email">No emails yet. Waiting...</p></div>
+</div>
+</div>
+<script>
+let timeLeft=900;
+let timerInterval;
+let currentEmail='';
+
+function generateEmail(){
+const chars='abcdefghijklmnopqrstuvwxyz0123456789';
+let result='';
+for(let i=0;i<10;i++) result+=chars.charAt(Math.floor(Math.random()*chars.length));
+return result+'@tempmail.com';
+}
+
+function startTimer(){
+clearInterval(timerInterval);
+timeLeft=900;
+timerInterval=setInterval(()=>{
+timeLeft--;
+let m=Math.floor(timeLeft/60);
+let s=timeLeft%60;
+document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s;
+if(timeLeft<=0){clearInterval(timerInterval);newEmail();}
+},1000);
+}
+
+function copyEmail(){
+navigator.clipboard.writeText(currentEmail);
+alert('Email copied!');
+}
+
+function newEmail(){
+currentEmail=generateEmail();
+document.getElementById('emailAddr').textContent=currentEmail;
+document.getElementById('inboxContent').innerHTML='<p class="no-email">No emails yet. Waiting...</p>';
+startTimer();
+}
+
+function refreshInbox(){
+alert('Refreshing inbox...');
+}
+
+newEmail();
+</script>
+</body>
+</html>
