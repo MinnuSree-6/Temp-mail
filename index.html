@@ -17,8 +17,17 @@ p{color:#555;margin-bottom:10px}
 .btn:hover{background:linear-gradient(135deg,#1557b0,#1a73e8);transform:scale(1.05)}
 .inbox{background:#ffffff;padding:25px;border-radius:15px;margin:20px 0;text-align:left;box-shadow:0 4px 15px rgba(26,115,232,0.2);border:2px solid #e3f2fd}
 .inbox h2{color:#1a73e8;margin-bottom:15px}
+.welcome-msg{background:#e8f5e9;border-left:4px solid #4caf50;padding:15px;border-radius:8px;margin:10px 0}
+.welcome-msg h3{color:#4caf50;margin-bottom:8px}
+.welcome-msg p{color:#555;font-size:0.9em;margin:3px 0}
+.welcome-msg .from{color:#888;font-size:0.8em}
+.welcome-msg .time{color:#888;font-size:0.8em;margin-top:5px}
 .email-item{background:#e3f2fd;padding:12px;border-radius:8px;margin:10px 0;cursor:pointer;border-left:4px solid #1a73e8}
-.no-email{color:#90caf9;text-align:center;padding:20px}
+.email-item.otp{background:#fff3e0;border-left:4px solid #ff9800}
+.email-item h3{color:#1a73e8;font-size:0.95em;margin-bottom:5px}
+.email-item .from{color:#555;font-size:0.85em}
+.email-item .time{color:#90caf9;font-size:0.8em;margin-top:5px}
+.email-body{background:#f8f9fa;padding:15px;border-radius:8px;margin-top:10px;display:none;font-size:0.9em;color:#333}
 </style>
 </head>
 <body>
@@ -34,19 +43,82 @@ p{color:#555;margin-bottom:10px}
 </div>
 <div class="inbox">
 <h2>📬 Inbox</h2>
-<div id="inboxContent"><p class="no-email">No emails yet. Waiting...</p></div>
+<div id="inboxContent">
+<div class="welcome-msg">
+<h3>👋 Hi! Welcome to 15minutemail.com</h3>
+<p class="from">From: no-reply@15minutemail.com</p>
+<p class="time">just now</p>
+<p>Your temporary email is ready.</p>
+<p>Use it for OTP verification.</p>
+<p>Email expires in 15 minutes!</p>
+</div>
+</div>
 </div>
 </div>
 <script>
 let timeLeft=900;
 let timerInterval;
 let currentEmail='';
-function generateEmail(){
-const chars='abcdefghijklmnopqrstuvwxyz0123456789';
-let result='';
-for(let i=0;i<10;i++) result+=chars.charAt(Math.floor(Math.random()*chars.length));
-return result+'@tempmail.com';
+let emailToken='';
+let startTime=Date.now();
+
+function timeAgo(){
+const seconds=Math.floor((Date.now()-startTime)/1000);
+if(seconds<60) return seconds+' seconds ago';
+if(seconds<3600) return Math.floor(seconds/60)+' minutes ago';
+return Math.floor(seconds/3600)+' hours ago';
 }
+
+async function getNewEmail(){
+try{
+const r=await fetch('https://api.guerrillamail.com/ajax.php?f=get_email_address',{credentials:'include'});
+const d=await r.json();
+emailToken=d.sid_token;
+currentEmail=d.email_addr;
+document.getElementById('emailAddr').textContent=currentEmail;
+startTime=Date.now();
+startTimer();
+}catch(e){
+document.getElementById('emailAddr').textContent='Loading failed. Refresh page!';
+}
+}
+
+async function refreshInbox(){
+try{
+const r=await fetch(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid_token=${emailToken}`,{credentials:'include'});
+const d=await r.json();
+let html=`<div class="welcome-msg">
+<h3>👋 Hi! Welcome to 15minutemail.com</h3>
+<p class="from">From: no-reply@15minutemail.com</p>
+<p class="time">${timeAgo()}</p>
+<p>Your temporary email is ready.</p>
+<p>Use it for OTP verification.</p>
+<p>Email expires in 15 minutes!</p>
+</div>`;
+if(d.list && d.list.length>0){
+d.list.forEach(email=>{
+const isOTP=email.mail_subject.toLowerCase().includes('otp')||
+email.mail_subject.toLowerCase().includes('verify')||
+email.mail_subject.toLowerCase().includes('code');
+html+=`<div class="email-item ${isOTP?'otp':''}" onclick="toggleBody(this)">
+<h3>${isOTP?'🔐 ':'📧 '}${email.mail_subject}</h3>
+<p class="from">From: ${email.mail_from}</p>
+<p class="time">${timeAgo()}</p>
+<div class="email-body">${email.mail_excerpt}</div>
+</div>`;
+});
+}
+document.getElementById('inboxContent').innerHTML=html;
+}catch(e){
+console.log('error');
+}
+}
+
+function toggleBody(el){
+const body=el.querySelector('.email-body');
+body.style.display=body.style.display==='block'?'none':'block';
+}
+
 function startTimer(){
 clearInterval(timerInterval);
 timeLeft=900;
@@ -58,20 +130,27 @@ document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s;
 if(timeLeft<=0){clearInterval(timerInterval);newEmail();}
 },1000);
 }
+
 function copyEmail(){
 navigator.clipboard.writeText(currentEmail);
 alert('Email copied!');
 }
+
 function newEmail(){
-currentEmail=generateEmail();
-document.getElementById('emailAddr').textContent=currentEmail;
-document.getElementById('inboxContent').innerHTML='<p class="no-email">No emails yet. Waiting...</p>';
-startTimer();
+startTime=Date.now();
+getNewEmail();
+document.getElementById('inboxContent').innerHTML=`<div class="welcome-msg">
+<h3>👋 Hi! Welcome to 15minutemail.com</h3>
+<p class="from">From: no-reply@15minutemail.com</p>
+<p class="time">just now</p>
+<p>Your temporary email is ready.</p>
+<p>Use it for OTP verification.</p>
+<p>Email expires in 15 minutes!</p>
+</div>`;
 }
-function refreshInbox(){
-alert('Refreshing inbox...');
-}
-newEmail();
+
+getNewEmail();
+setInterval(refreshInbox,15000);
 </script>
 </body>
 </html>
